@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Todo Board</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    .board {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+    }
+    .column {
+      flex: 1;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      min-height: 400px;
+    }
+    .column h2 {
+      text-align: center;
+    }
+    .todo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      margin: 10px 0;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      cursor: grab;
+    }
+    .todo-content {
+      flex: 1;
+    }
+    .todo img {
+      max-width: 100%;
+      margin-top: 5px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      padding: 10px 20px;
+    }
+    a {
+      text-decoration: none;
+      color: #007bff;
+    }
+    .delete-btn {
+      color: red;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .todo-dropzone {
+      background-color: #f5f5f5;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      min-height: 400px;
+      padding: 10px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+<body>
+<div class="topbar">
+  <div style="flex: 1; text-align: left;">
+    <a href="{% url 'add_todo' %}">+ Add Todo</a>
+  </div>
+
+  <div style="flex: 1; text-align: center;">
+    <h2 style="margin: 0;">Todo List</h2>
+  </div>
+
+  <div style="flex: 1; text-align: right;">
+    {% if user.is_authenticated %}
+      Welcome, {{ user.username }} | <a href="{% url 'logout' %}">Logout</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="board">
+  {% for status, label in status_columns %}
+  <div class="column">
+      <h2>{{ label }}</h2>
+      <div class="todo-dropzone" id="{{ status }}">
+        {% for todo in todos %}
+          {% if todo.status == status %}
+            <div class="todo" data-todo-id="{{ todo.id }}">
+              <div class="todo-content">
+                <strong>{{ todo.title }}</strong>
+                {% if todo.photo %}
+                  <br><img src="{{ todo.photo.url }}" alt="todo image">
+                {% endif %}
+              </div>
+              <a href="{% url 'edit_todo' todo.id %}" style="color: #28a745; margin-right: 10px;">✏️ Edit</a>
+              <a class="delete-btn" href="{% url 'delete_todo' todo.id %}">🗑</a>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+  </div>
+{% endfor %}
+</div>
+
+<script>
+    const statuses = ['pending', 'in_progress', 'done'];
+
+    statuses.forEach(status => {
+      new Sortable(document.getElementById(status), {
+        group: 'shared',
+        animation: 150,
+        onAdd: function (evt) {
+          const todoId = evt.item.dataset.todoId;
+          const newStatus = evt.to.id;
+
+          fetch("{% url 'update_status_ajax' %}", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+              id: todoId,
+              status: newStatus
+            })
+          }).then(() => {
+            console.log("Status updated to:", newStatus);
+          }).catch(err => {
+            alert("Status update failed.");
+            console.error(err);
+          });
+        }
+      });
+    });
+</script>
+</body>
+</html>
