@@ -8,7 +8,6 @@
 
 | Username | password |
 |:--------:|:--------:|
-|  admin   |  admin   |
 |  demo1   | hackme11 |
 |  demo2   | hackme22 |
 
